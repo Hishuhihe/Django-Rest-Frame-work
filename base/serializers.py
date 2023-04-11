@@ -11,36 +11,44 @@ class UserSerializer(serializers.ModelSerializer):
     Serializer for User model
     """
     password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'email', 'phone_number']
+        fields = ['id', 'username', 'password', 'confirm_password', 'email', 'phone_number']
+        extra_kwargs = {'id': {'required': False}}
+
+    def validate_username(self, value):
+        email = self.initial_data.get('email')
+        phone_number = self.initial_data.get('phone_number')
+        if not value and not email and not phone_number:
+            raise serializers.ValidationError("At least one of the fields (Username, Email, Phone Number) must be set")
+        return value
+
+    def validate_email(self, value):
+        if value and User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email address is already in use.")
+        return value
+
+    def validate_phone_number(self, value):
+        if value and User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError("This phone number is already in use.")
+        return value
 
     def validate(self, attrs):
         """
         Validate the fields
         """
-        email = attrs.get('email')
-        phone_number = attrs.get('phone_number')
-        username = attrs.get('username')
-
-        if not email and not phone_number:
-            raise serializers.ValidationError("The Email or Phone Number field must be set")
-        if not username:
-            raise serializers.ValidationError("The Username field must be set")
-
-        if email and User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("This email address is already in use.")
-        if phone_number and User.objects.filter(phone_number=phone_number).exists():
-            raise serializers.ValidationError("This phone number is already in use.")
-        if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError("This username is already in use.")
-
-        attrs['password'] = make_password(attrs['password'])
+        password = attrs['password']
+        confirm_password = attrs.pop('confirm_password', None)
+        if password != confirm_password:
+            raise serializers.ValidationError("The passwords do not match")
+        if len(password) < 6 or len(password) > 8:
+            raise serializers.ValidationError("Password must be between 6 and 8 characters long")
+        attrs['password'] = make_password(password)
         return attrs
+
     
-
-
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=False)
     phone = serializers.CharField(required=False)
@@ -72,4 +80,5 @@ class LoginSerializer(serializers.Serializer):
         attrs['access'] = str(refresh.access_token)
 
         return attrs
+
 

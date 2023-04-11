@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'base',
+    'rest_framework_simplejwt.token_blacklist',
     'rest_framework',
 ]
 
@@ -122,6 +123,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'API.wsgi.application'
+
 
 
 # Database
