@@ -1,12 +1,16 @@
-from rest_framework import status
+from rest_framework import status, generics
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from .serializers import UserSerializer, LoginSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from rest_framework.generics import DestroyAPIView, UpdateAPIView,  RetrieveAPIView
 
-# UserRegister
+
+User = get_user_model()
+# UserRegisterandcreat
 class UserRegisterAPIView(APIView):
     serializer_class = UserSerializer
 
@@ -49,7 +53,6 @@ class LogoutView(APIView):
     """
     API view to handle user logout
     """
-    @csrf_exempt
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh_token')
@@ -59,8 +62,42 @@ class LogoutView(APIView):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-    
-   
 
+class AllUserListView(generics.ListAPIView):
+    """
+    API view to list all users or create a new user
+    """
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        """
+        Get queryset for all active users
+        """
+        return User.objects.filter(is_active=True)
+    
+class UserUpdateView(RetrieveAPIView, UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'id'
+
+    def perform_update(self, serializer):
+        # Get the current instance
+        instance = self.get_object()
+        # Save the old values of email and phone_number
+        old_email = instance.email
+        old_phone_number = instance.phone_number
+        # Update the instance with the new values
+        serializer.save()
+        # Check if email and phone_number havegs)
+
+
+class UserDestroyAPIView(DestroyAPIView):
+    """
+    API view to delete a user
+    
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'id'
 
         

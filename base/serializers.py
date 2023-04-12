@@ -16,8 +16,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'confirm_password', 'email', 'phone_number']
-        extra_kwargs = {'id': {'required': False}}
-
+        #extra_kwargs = {'id': {'required': False}}
+        read_only_fields = ('id',)
+    
     def validate_username(self, value):
         email = self.initial_data.get('email')
         phone_number = self.initial_data.get('phone_number')
@@ -26,11 +27,15 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
+        if self.instance and value == self.instance.email:
+            return value
         if value and User.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email address is already in use.")
         return value
 
     def validate_phone_number(self, value):
+        if self.instance and value == self.instance.phone_number:
+            return value
         if value and User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError("This phone number is already in use.")
         return value
