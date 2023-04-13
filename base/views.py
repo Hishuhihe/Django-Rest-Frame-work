@@ -7,9 +7,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework.generics import DestroyAPIView, UpdateAPIView,  RetrieveAPIView
+from django.core.signing import TimestampSigner
+from django.core.mail import send_mail
+
 
 
 User = get_user_model()
+
 # UserRegisterandcreat
 class UserRegisterAPIView(APIView):
     serializer_class = UserSerializer
@@ -24,11 +28,25 @@ class UserRegisterAPIView(APIView):
                 'error_message': str(e),
                 'errors_code': 400,
             }, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer.save()
+        user = serializer.save()
+        self.send_activation_email(user)
         return JsonResponse({
-            'message': 'Register successful!'
+            'message': 'Register successful! Please check your email to activate your account'
         }, status=status.HTTP_201_CREATED)
+    
+    # send email activate user
+    def send_activation_email(self, user):
+        signer = TimestampSigner()
+        token = signer.sign(user.email)
+        activation_link = f'http://localhost:8000/api/activate/{token}/'
+
+        subject = 'Activate your account'
+        message = f'Hi {user.username}, please activate your account by clicking on the link below:\n{activation_link}'
+        from_email = 'noreply@example.com'
+        recipient_list = [user.email]
+
+        send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+
 
 
 # UserLogin               
