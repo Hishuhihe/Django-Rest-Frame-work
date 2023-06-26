@@ -1,0 +1,4 @@
+django
+djangorestframework
+python 3.10
+djangorestframework-simplejwt
